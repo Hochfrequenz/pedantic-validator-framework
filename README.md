@@ -1,91 +1,181 @@
-# Python Template Repository including Tox.ini, Unittests, Linting Actions and Coverage Measurements
+# Pedantic Validator Framework
 
-<!--- you need to replace the `organization/repo_name` in the status badge URLs --->
+![Unittests status badge](https://github.com/Hochfrequenz/pedantic-validator-framework/workflows/Unittests/badge.svg)
+![Coverage status badge](https://github.com/Hochfrequenz/pedantic-validator-framework/workflows/Coverage/badge.svg)
+![Linting status badge](https://github.com/Hochfrequenz/pedantic-validator-framework/workflows/Linting/badge.svg)
+![Black status badge](https://github.com/Hochfrequenz/pedantic-validator-framework/workflows/Formatting/badge.svg)
 
-![Unittests status badge](https://github.com/Hochfrequenz/python_template_repository/workflows/Unittests/badge.svg)
-![Coverage status badge](https://github.com/Hochfrequenz/python_template_repository/workflows/Coverage/badge.svg)
-![Linting status badge](https://github.com/Hochfrequenz/python_template_repository/workflows/Linting/badge.svg)
-![Black status badge](https://github.com/Hochfrequenz/python_template_repository/workflows/Formatting/badge.svg)
 
-This is a template repository. It doesn't contain any useful code but only a minimal working setup for a Python project including:
+This package enables you to easily create functions to apply validation logic to your data. It is designed
+to work with arbitrary object structures. The validation function can be `async` if you need this feature.
 
-- a basic **project structure** with
-  - tox.ini
-  - requirements.in
-  - and a requirements.txt derived from it
-  - an example class
-  - an example unit test (using pytest)
-- ready to use **Github Actions** for
-  - [pytest](https://pytest.org)
-  - [code coverage measurement](https://coverage.readthedocs.io) (fails below 80% by default)
-  - [pylint](https://pylint.org/) (only accepts 10/10 code rating by default)
-  - [mypy](https://github.com/python/mypy) (static type checks where possible)
-  - [black](https://github.com/psf/black) code formatter check
-  - [isort](https://pycqa.github.io/isort/) import order check
-  
+Validation functions take arguments which are collected from a data structure instance on validation. The way how you
+collect the arguments is fully customizable. But we give some features to retrieve these data more easily.
 
-By default, it uses Python version 3.11.
+## Features
+- Functions can be `async` or synchronous.
+- Function arguments can be combined from anywhere of the data structure.
+- Function arguments can be optional by defining a default value. If the argument is not found in the data structure,
+  the default value is used instead of failing the validation test.
+- Function arguments must be fully type hinted. The framework will do an implicit type check before calling the
+  validation function by using `typeguard`.
+- Querying the data structure for those arguments is fully customizable:
+  - You can define the location of the data as path notation like: `field_a_of_data_structure.field_b_of_field_a`
+  - You can define iterators to apply validation logic e.g. on every element inside a list.
+  - You can define a completely customized function to retrieve the data.
+- Errors raised in validation functions during the validation process are handled by an error handler.
+- Basic analysis of the result of a validated data structure.
+
+## Installation
+The package is [available on PyPI](https://pypi.org/project/pvframework/):
+```bash
+pip install pvframework
+```
+
+## Getting started
+To validate an arbitrary object structure (called data structure in the following), you have to create a
+`ValidationManager` instance which is unique for the type of the data structure. This instance can
+register any mapped validators you want to use for your data structure.
+
+```python
+import asyncio
+from pvframework import ValidationManager, PathMappedValidator, Validator
+
+class MySubStructure:
+    def __init__(self, y: str):
+        self.y = y
+
+class MyDataStructure:
+    def __init__(self, x: MySubStructure):
+        self.x = x
+
+manager = ValidationManager[MyDataStructure]()
+
+def check_z_is_a_number(z: str):
+    if not z.isnumeric():
+        raise ValueError("y is not a number")
+
+manager.register(PathMappedValidator(Validator(check_y_is_a_number), {"z": "x.y"}))
+
+data = MyDataStructure(MySubStructure("123"))
+result = asyncio.run_until_complete(manager.validate(data))
+assert result.num_fails == 0
+```
+
+First, the function `check_y_is_a_number` is a simple function which takes a string and raises an error if the value
+is not numeric. The naming of the parameter is not important.
+The framework ensures that the value is a string before calling the function. So you don't have to do any instance
+checks in your validation functions. Similarly, if the framework can't find the value in the data structure, it will
+also be treated as failed. The type checks are done via `typeguard`.
+
+Second, we have to create a validator of this function by passing it to its constructor. It only does some basic
+analysis like inspecting the signature, determining required and optional arguments, etc. You could create subclasses
+of this and passing it to customized `MappedValidator`s if needed.
+
+Third, we need to tell the framework how it should retrieve the values for the arguments from the data structure.
+For this, the framework provides two predefined `MappedValidator`s: `PathMappedValidator` and `QueryMappedValidator`.
+The `QueryMappedValidator` is very powerful but might be a bit overkill in most cases. The `PathMappedValidator` is
+a simpler way to define the location of the data for each argument using a path notation.
+Between every point the framework will invoke  the `__getattr__` method to query through the data structure.
+If you have any more complicated than that you can use the `QueryMappedValidator` or even create your own
+`MappedValidator` subclass.
+
+Last, you have to register the `MappedValidator` to the `ValidationManager`. You can than invoke the `validate`
+method with one or more data structure instances. The `validate` method returns a `ValidationResult` instance which
+provides some basic analysis of the validation result if needed. Note that these analysis are only triggered on
+demand but the object will cache any results.
+
+Note: The validate method is `async` because the validation functions can be `async` as well. Currently, we don't need
+a synchronous alternative for the method but will come eventually.
+
+## A more complex example
+
+This example will demonstrate you how you can use the `QueryMappedValidator` which has to iterate parallel over
+two dictionaries inside the data structure.
+
+```python
+import asyncio
+from pvframework import (
+    ValidationManager,
+    ParallelQueryMappedValidator,
+    Validator,
+    Query,
+    SyncValidatorFunction,
+)
+from dataclasses import dataclass
+from schwifty import IBAN
+
+@dataclass
+class BankingData(BaseModel):
+    iban: str
+
+@dataclass
+class Customer:
+    name: str
+    age: int
+    banking_data_per_contract: dict[str, BankingData]
+    # This maps a contract ID onto its payment information
+    paying_through_sepa: dict[str, bool]
+    # This stores for each contract ID if the customer pays using a SEPA mandate
+
+def check_iban(sepa_zahler: bool, iban: Optional[str] = None):
+    """
+    If `sepa_zahler` is True `iban` is required and checked on syntax.
+    If `sepa_zahler` is False the test passes.
+    """
+    if sepa_zahler:
+        if iban is None:
+            raise ValueError(f"{param('iban').param_id} is required for sepa_zahler")
+        IBAN(iban).validate()
+
+ValidatorType: TypeAlias = Validator[MyDataStructure, SyncValidatorFunction]
+validate_iban: ValidatorType = Validator(check_iban)
+
+def iter_contract_id_dict(some_dict: dict[str, Any]) -> Generator[tuple[Any, str], None, None]:
+    return ((value, f"[contract_id={key}]") for key, value in some_dict.items())
+
+manager = ValidationManager[Customer]()
+manager.register(
+    ParallelQueryMappedValidator(
+        validate_iban,
+        {
+            "iban": Query().path("banking_data_per_contract").iter(iter_contract_id_dict).path("iban"),
+            "sepa_zahler": Query().path("paying_through_sepa").iter(iter_contract_id_dict),
+        },
+    )
+)
+
+data = Customer(
+    name="John Doe",
+    age=42,
+    banking_data_per_contract={
+        "contract_1": BankingData(iban="DE52940594210000082271"),
+        "contract_2": BankingData(iban="DE89370400440532013000"),
+        "contract_3": BankingData(iban="DE89370400440532013001"),
+    },
+    paying_through_sepa={"1": True, "2": True, "3": False},
+)
+result = asyncio.run_until_complete(manager.validate(data))
+assert result.num_errors_total == 1
+assert "contract_2" in str(result.all_errors[0])
+```
+
+In this case we are using a specialized version of the `QueryMappedValidator`. When having to iterate through
+lists, dicts or similar the `QueryMappedValidator` will apply the validation function on every element of the
+cartesian product of the iterators. I.e. for every possible combination. But we want the iterators to map
+parallel. This is what the `ParallelQueryMappedValidator` does. If the iterators have different lengths which are not
+`1`, it will *raise* an error. I.e. the `validate` method would crash.
+
+If you are wondering about the iterator function `iter_contract_id_dict` and why it returns a tuple of the value and
+a string:
+The string is used for error reporting. If the validation function fails for the set of parameters, the framework
+will use those strings to define the location of the parameter inside the data structure.
+
 
 ## How to use this Repository on Your Machine
 
-This introduction assumes that you have tox installed already (
-see [installation instructions](https://tox.readthedocs.io/en/latest/installation.html)) and that a `.toxbase` environment
-has been created.
-`.toxbase` is a project independent virtual environment-template for all the tox environments on your machine. If anything is weird during the tox installation or after the installation, try turning your computer off and on again before getting too frustrated.
-
-Also on new windows machines it is possible that the execution policy is set to restricted and you are not allowed execute scripts. You can find detailed information [here](https://learn.microsoft.com/de-de/powershell/module/microsoft.powershell.core/about/about_execution_policies?view=powershell-7.3).
-
-If this is the case, clone this repository and create the `dev` environment on your machine.
-
-```bash
-tox -e dev
-```
-
-### How to use with PyCharm
-
-1. Create a new project using existing sources with your local working copy of this repository as root directory. Choose
-   the path `your_repo/.tox/dev/` as path of the "previously configured interpreter".
-2. Set the
-   default [test runner of your project](https://www.jetbrains.com/help/pycharm/choosing-your-testing-framework.html) to
-   pytest.
-3. Set the `src` directory as sources root (via right click, [docs](https://www.jetbrains.com/help/pycharm/content-root.html)).
-4. Set
-   the [working directory of the unit tests](https://www.jetbrains.com/help/pycharm/creating-run-debug-configuration-for-tests.html)
-   to the project root (instead of the unittest directory).
-
-### How to use with VS Code
-
-1. Open the folder with VS Code.
-2. **Select the python interpreter** ([official docs](https://code.visualstudio.com/docs/python/environments#_manually-specify-an-interpreter)) which is created by tox. Open the command pallett with `CTRL + P` and type `Python: Select Interpreter`. Select the interpreter which is placed in `.tox/dev/Scripts/python.exe` under Windows or `.tox/dev/bin/python` under Linux and macOS.
-3. **Setup pytest and pylint**. Therefore we open the file `.vscode/settings.json` which should be automatically generated during the interpreter setup. Insert the following lines into the settings:
-
-```json
-{
-    "python.testing.unittestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "pythonTestExplorer.testFramework": "pytest",
-    "python.testing.pytestArgs": [
-        "unittests"
-    ],
-    "python.linting.pylintEnabled": true
-}
-```
-4. Create a `.env` file and insert the following line
-
-For Windows:
-```
-PYTHONPATH=src;${PYTHONPATH}
-```
-For Linux and Mac:
-```
-PYTHONPATH=src:${PYTHONPATH}
-```
-This makes sure, that the imports are working for the unittests.
-At the moment I am not totally sure that it is the best practise, but it's getting the job done.
-
-5. Enjoy 🤗
+Follow the instructions in our [Python template repository](https://github.com/Hochfrequenz/python_template_repository#how-to-use-this-repository-on-your-machine).
 
 ## Contribute
 
-You are very welcome to contribute to this template repository by opening a pull request against the main branch.
+You are very welcome to contribute to this repository by opening a pull request against the main branch.
