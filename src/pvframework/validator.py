@@ -86,7 +86,6 @@ class Validator(Generic[DataSetT, ValidatorFunctionT]):
         return f"Validator({self.name})"
 
 
-# pylint: disable=too-few-public-methods
 class Parameter(Generic[DataSetT]):
     """
     Encapsulates a single parameter. A parameter must have an ID for better error output.

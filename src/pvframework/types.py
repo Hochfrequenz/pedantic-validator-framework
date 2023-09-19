@@ -7,7 +7,6 @@ if TYPE_CHECKING:
     from .validator import MappedValidator, Validator
 
 
-# pylint: disable=too-few-public-methods
 class Hashable(Protocol):
     """
     A protocol that defines the __hash__ method.

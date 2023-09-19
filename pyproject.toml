@@ -15,7 +15,12 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
 ]
-dependencies = []     # add all the dependencies from requirements.in here, too
+dependencies = [     # add all the dependencies from requirements.in here, too
+    "bidict",
+    "frozendict",
+    "networkx",
+    "typeguard",
+]
 dynamic = ["readme", "version"]
 
 [project.urls]
@@ -31,6 +36,7 @@ profile = "black"
 
 [tool.pylint."MESSAGES CONTROL"]
 max-line-length = 120
+disable="too-few-public-methods"
 
 [build-system]
 requires = ["hatchling>=1.8.0", "hatch-vcs", "hatch-fancy-pypi-readme"]
