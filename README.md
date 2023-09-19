@@ -37,6 +37,8 @@ To validate an arbitrary object structure (called data structure in the followin
 `ValidationManager` instance which is unique for the type of the data structure. This instance can
 register any mapped validators you want to use for your data structure.
 
+Note that the data structure have to be hashable at least at validation time. This is needed for proper error handling.
+
 ```python
 import asyncio
 from pvframework import ValidationManager, PathMappedValidator, Validator
@@ -45,9 +47,15 @@ class MySubStructure:
     def __init__(self, y: str):
         self.y = y
 
+    def __hash__(self):
+        return hash(self.y)
+
 class MyDataStructure:
     def __init__(self, x: MySubStructure):
         self.x = x
+
+    def __hash__(self):
+        return hash(self.x)
 
 manager = ValidationManager[MyDataStructure]()
 
@@ -55,10 +63,10 @@ def check_z_is_a_number(z: str):
     if not z.isnumeric():
         raise ValueError("y is not a number")
 
-manager.register(PathMappedValidator(Validator(check_y_is_a_number), {"z": "x.y"}))
+manager.register(PathMappedValidator(Validator(check_z_is_a_number), {"z": "x.y"}))
 
 data = MyDataStructure(MySubStructure("123"))
-result = asyncio.run_until_complete(manager.validate(data))
+result = asyncio.get_event_loop().run_until_complete(manager.validate(data))
 assert result.num_fails == 0
 ```
 
@@ -100,22 +108,25 @@ from pvframework import (
     ParallelQueryMappedValidator,
     Validator,
     Query,
-    SyncValidatorFunction,
 )
+from pvframework.types import SyncValidatorFunction
+from pvframework.utils import param
 from dataclasses import dataclass
 from schwifty import IBAN
+from typing import Optional, TypeAlias, Any, Generator
+from frozendict import frozendict
 
-@dataclass
-class BankingData(BaseModel):
+@dataclass(frozen=True)
+class BankingData:
     iban: str
 
-@dataclass
+@dataclass(frozen=True)
 class Customer:
     name: str
     age: int
-    banking_data_per_contract: dict[str, BankingData]
+    banking_data_per_contract: frozendict[str, BankingData]
     # This maps a contract ID onto its payment information
-    paying_through_sepa: dict[str, bool]
+    paying_through_sepa: frozendict[str, bool]
     # This stores for each contract ID if the customer pays using a SEPA mandate
 
 def check_iban(sepa_zahler: bool, iban: Optional[str] = None):
@@ -128,7 +139,7 @@ def check_iban(sepa_zahler: bool, iban: Optional[str] = None):
             raise ValueError(f"{param('iban').param_id} is required for sepa_zahler")
         IBAN(iban).validate()
 
-ValidatorType: TypeAlias = Validator[MyDataStructure, SyncValidatorFunction]
+ValidatorType: TypeAlias = Validator[Customer, SyncValidatorFunction]
 validate_iban: ValidatorType = Validator(check_iban)
 
 def iter_contract_id_dict(some_dict: dict[str, Any]) -> Generator[tuple[Any, str], None, None]:
@@ -148,14 +159,14 @@ manager.register(
 data = Customer(
     name="John Doe",
     age=42,
-    banking_data_per_contract={
+    banking_data_per_contract=frozendict({
         "contract_1": BankingData(iban="DE52940594210000082271"),
         "contract_2": BankingData(iban="DE89370400440532013000"),
         "contract_3": BankingData(iban="DE89370400440532013001"),
-    },
-    paying_through_sepa={"1": True, "2": True, "3": False},
+    }),
+    paying_through_sepa=frozendict({"1": True, "2": True, "3": False}),
 )
-result = asyncio.run_until_complete(manager.validate(data))
+result = asyncio.get_event_loop().run_until_complete(manager.validate(data))
 assert result.num_errors_total == 1
 assert "contract_2" in str(result.all_errors[0])
 ```
