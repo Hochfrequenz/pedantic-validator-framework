@@ -4,11 +4,11 @@ Contains functionality to analyze the result of a validation process
 import itertools
 from typing import TYPE_CHECKING, Generic, Optional
 
-from bomf.validation.core.errors import ErrorHandler, ValidationError, _IDType
-from bomf.validation.core.types import DataSetT
+from .errors import ErrorHandler, ValidationError, _IDType
+from .types import DataSetT
 
 if TYPE_CHECKING:
-    from bomf.validation.core import ValidationManager
+    from .execution import ValidationManager
 
 
 def _extract_error_id(validation_error: ValidationError) -> _IDType:

@@ -6,15 +6,17 @@ import itertools
 from collections import OrderedDict
 from typing import Any, Callable, Generator, Iterable, Iterator, Optional, Self, TypeAlias
 
-from bomf.validation.core import MappedValidator, Parameter, Parameters, required_field
-from bomf.validation.core.types import DataSetT, ValidatorFunctionT, ValidatorT
 from frozendict import frozendict
+
+from pvframework.types import DataSetT, ValidatorFunctionT, ValidatorT
+from pvframework.utils.query_object import required_field
+from pvframework.validator import MappedValidator, Parameter, Parameters
 
 IteratorReturnType: TypeAlias = tuple[Any, str]
 IteratorReturnTypeWithException: TypeAlias = Exception | IteratorReturnType
 
 
-class _QueryIterable(Iterable[IteratorReturnTypeWithException]):
+class QueryIterable(Iterable[IteratorReturnTypeWithException]):
     """
     This class is used to wrap a function which returns an iterator (which will always be the same if provided with
     the same inputs) into an Iterable. This is needed to use itertools.product.
@@ -126,7 +128,7 @@ class Query:
         self._function_stack.append(_iter_func)
         return self
 
-    def iterable(self, data_set: DataSetT, include_exceptions: bool = False) -> _QueryIterable:
+    def iterable(self, data_set: DataSetT, include_exceptions: bool = False) -> QueryIterable:
         """
         Returns an Iterable. When iterating through it, the query will be used to obtain all elements from the data set.
         If an exception is raised during the process, the iterator yields the exception instead of a parameter value.
@@ -134,7 +136,7 @@ class Query:
         If the parameter to which this query corresponds to is optional, these errors will be ignored. Otherwise,
         they will be handled by the error handler.
         """
-        return _QueryIterable(data_set, self._function_stack[-1], include_exceptions)
+        return QueryIterable(data_set, self._function_stack[-1], include_exceptions)
 
 
 class QueryMappedValidator(MappedValidator[DataSetT, ValidatorFunctionT]):
@@ -191,7 +193,7 @@ class QueryMappedValidator(MappedValidator[DataSetT, ValidatorFunctionT]):
                     )
             yield Parameters(self, **parameter_dict)
 
-    def param_sets(self, param_iterables: dict[str, _QueryIterable]) -> Iterator[dict[str, Any] | Exception]:
+    def param_sets(self, param_iterables: dict[str, QueryIterable]) -> Iterator[dict[str, Any] | Exception]:
         """
         Gets for each parameter an iterable of all possible values. This method defines how those iterables are
         combined to parameter sets to call the validator with.

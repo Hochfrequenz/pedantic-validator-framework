@@ -4,12 +4,14 @@ ValidationManager. This reduces complexity inside the ValidationManager.
 """
 import asyncio
 import inspect
+import logging
 import types
 from abc import ABC, abstractmethod
-from typing import Any, Generator, Generic, TypeGuard, Union, overload
+from typing import Any, Generator, Generic, Optional, TypeGuard, Union, overload
 
-from bomf.logging import logger
-from bomf.validation.core.types import (
+from frozendict import frozendict
+
+from .types import (
     AsyncValidatorFunction,
     DataSetT,
     MappedValidatorT,
@@ -17,9 +19,9 @@ from bomf.validation.core.types import (
     ValidatorFunctionT,
     ValidatorT,
 )
-from frozendict import frozendict
 
 
+# pylint: disable=too-many-instance-attributes
 class Validator(Generic[DataSetT, ValidatorFunctionT]):
     """
     Holds the actual validator function:
@@ -36,14 +38,15 @@ class Validator(Generic[DataSetT, ValidatorFunctionT]):
     This class will collect some information about the validator function for the ValidationManager.
     """
 
-    def __init__(self, validator_func: ValidatorFunctionT):
+    def __init__(self, validator_func: ValidatorFunctionT, logger: Optional[logging.Logger] = None):
+        self._logger = logger if logger is not None else logging.getLogger("pvframework.Validator")
         validator_signature = inspect.signature(validator_func)
         if len(validator_signature.parameters) == 0:
             raise ValueError("The validator function must take at least one argument")
         if any(param.kind == param.POSITIONAL_ONLY for param in validator_signature.parameters.values()):
             raise ValueError("The function parameters must not contain positional only parameters")
         if validator_signature.return_annotation not in (None, validator_signature.empty):
-            logger.get().warning(
+            self._logger.warning(
                 "Annotated return type is not None (the return value will be ignored): %s(...) -> %s",
                 validator_func.__name__,
                 validator_signature.return_annotation,
@@ -68,7 +71,7 @@ class Validator(Generic[DataSetT, ValidatorFunctionT]):
         self.optional_param_names = self.param_names - self.required_param_names
         self.name = validator_func.__name__
         self.is_async: bool = asyncio.iscoroutinefunction(validator_func)
-        logger.get().debug("Created validator: %s", self.name)
+        self._logger.debug("Created validator: %s", self.name)
 
     def __hash__(self):
         return hash(self.func)
@@ -131,10 +134,11 @@ class MappedValidator(ABC, Generic[DataSetT, ValidatorFunctionT]):
     A validator which is capable to fill the parameter list by querying a data set instance.
     """
 
-    def __init__(self, validator: ValidatorT):
+    def __init__(self, validator: ValidatorT, logger: Optional[logging.Logger] = None):
         self.validator: ValidatorT = validator
         self.name = validator.name
-        logger.get().debug("Created ParameterProvider: %s, %s", self.__class__.__name__, self.validator.name)
+        self._logger = logger if logger is not None else logging.getLogger("pvframework.MappedValidator")
+        self._logger.debug("Created ParameterProvider: %s, %s", self.__class__.__name__, self.validator.name)
 
     @abstractmethod
     def provide(self, data_set: DataSetT) -> Generator[Parameters[DataSetT] | Exception, None, None]:

@@ -1,14 +1,23 @@
 """
 Contains the types used in the validation framework
 """
-from typing import TYPE_CHECKING, Any, Callable, Coroutine, TypeAlias, TypeVar
-
-from bomf.model import Bo4eDataSet
+from typing import TYPE_CHECKING, Any, Callable, Coroutine, Protocol, TypeAlias, TypeVar
 
 if TYPE_CHECKING:
-    from bomf.validation.core.validator import MappedValidator, Validator
+    from .validator import MappedValidator, Validator
 
-DataSetT = TypeVar("DataSetT", bound=Bo4eDataSet)
+
+# pylint: disable=too-few-public-methods
+class Hashable(Protocol):
+    """
+    A protocol that defines the __hash__ method.
+    """
+
+    def __hash__(self) -> int:
+        ...
+
+
+DataSetT = TypeVar("DataSetT", bound=Hashable)
 AsyncValidatorFunction: TypeAlias = Callable[..., Coroutine[Any, Any, None]]
 SyncValidatorFunction: TypeAlias = Callable[..., None]
 ValidatorFunction: TypeAlias = AsyncValidatorFunction | SyncValidatorFunction

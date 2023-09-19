@@ -1,7 +1,11 @@
 """
 This module contains the ParallelQueryMappedValidator class.
 """
-from .query_map import QueryMappedValidator
+from typing import Any, Iterator, Optional
+
+from pvframework.types import DataSetT, ValidatorFunctionT
+
+from .query_map import QueryIterable, QueryMappedValidator
 
 
 class ParallelQueryMappedValidator(QueryMappedValidator[DataSetT, ValidatorFunctionT]):
@@ -11,7 +15,7 @@ class ParallelQueryMappedValidator(QueryMappedValidator[DataSetT, ValidatorFunct
     => For every parameter pair p_i, p_j: len(p_i) == len(p_j) or len(p_i) == 1 or len(p_j) == 1
     """
 
-    def param_sets(self, param_iterables: dict[str, _QueryIterable]) -> Iterator[dict[str, Any] | Exception]:
+    def param_sets(self, param_iterables: dict[str, QueryIterable]) -> Iterator[dict[str, Any] | Exception]:
         """
         This method is a generator which yields a dict of parameter sets. Each parameter set is a dict of parameter
         names and values. The parameter sets are yielded in parallel. It behaves similar to zip.
@@ -24,7 +28,7 @@ class ParallelQueryMappedValidator(QueryMappedValidator[DataSetT, ValidatorFunct
         for length in lengths:
             if 1 < iter_count != length:
                 raise ValueError("All parameter sets must have the same length or be scalar")
-            elif length != iter_count:
+            if length != iter_count:
                 iter_count = length
         for i in range(iter_count):
             param_set: Optional[dict[str, Any]] = {

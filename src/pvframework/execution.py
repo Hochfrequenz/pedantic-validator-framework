@@ -3,6 +3,7 @@ Here is the main stuff. The ValidationManager bundles several mapped validators 
 these.
 """
 import asyncio
+import logging
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import timedelta
@@ -10,12 +11,12 @@ from enum import IntEnum, StrEnum
 from typing import Generic, Iterator, Optional
 
 import networkx as nx
-from bomf.logging import logger
-from bomf.validation.core.analysis import ValidationResult
-from bomf.validation.core.errors import ErrorHandler, ValidationError
-from bomf.validation.core.types import DataSetT, MappedValidatorSyncAsync, SyncValidatorFunction
-from bomf.validation.core.validator import MappedValidator, Parameters, is_async, is_sync
 from typeguard import TypeCheckError, check_type
+
+from .analysis import ValidationResult
+from .errors import ErrorHandler, ValidationError
+from .types import DataSetT, MappedValidatorSyncAsync, SyncValidatorFunction
+from .validator import MappedValidator, Parameters, is_async, is_sync
 
 
 class _CustomErrorIDS(IntEnum):
@@ -115,12 +116,15 @@ class ValidationManager(Generic[DataSetT]):
     you can define dependencies for a validator. Then, the validator will always be executed after the dependencies
     have finished.
     You can also define a timeout for a validator function after which the execution will be cancelled.
+    The ValidationManager will use the logger "pvframework.ValidationManager" for logging on default. You can
+    provide a logger to the constructor which will be used instead if you need.
     """
 
-    def __init__(self):
+    def __init__(self, logger: Optional[logging.Logger] = None):
         self.dependency_graph: DependencyGraph = DependencyGraph()
         self.validators: dict[MappedValidatorSyncAsync, _ExecutionInfo] = {}
         self._runtime_execution_info: Optional[_RuntimeExecutionInfo] = None
+        self._logger = logger if logger is not None else logging.getLogger("pvframework.ValidationManager")
 
     @property
     def info(self) -> _RuntimeExecutionInfo:
@@ -170,7 +174,7 @@ class ValidationManager(Generic[DataSetT]):
         )
         self.dependency_graph.add_node(mapped_validator)
         self.dependency_graph.add_edges_from(dependency_graph_edges)
-        logger.get().debug("Registered validator: %s", repr(mapped_validator))
+        self._logger.debug("Registered validator: %s", repr(mapped_validator))
 
     async def _dependency_errored(self, current_mapped_validator: MappedValidatorSyncAsync) -> bool:
         """
@@ -333,9 +337,15 @@ class ValidationManager(Generic[DataSetT]):
         """
         error_handlers: dict[DataSetT, ErrorHandler[DataSetT]] = {}
         for data_set in data_sets:
+            try:
+                hash(data_set)
+            except TypeError as error:
+                raise TypeError(
+                    f"The data set {data_set} is not hashable. " "This is required for the error handler."
+                ) from error
             self._runtime_execution_info = _RuntimeExecutionInfo(
                 data_set=data_set,
-                error_handler=ErrorHandler(data_set),
+                error_handler=ErrorHandler(data_set, self._logger),
                 states=defaultdict(lambda: _ExecutionState.PENDING),
                 tasks=defaultdict(lambda: None),
                 running_tasks=defaultdict(
@@ -355,7 +365,7 @@ class ValidationManager(Generic[DataSetT]):
 
         validation_result = ValidationResult(self, error_handlers)
         if log_summary:
-            logger.get().info(
+            self._logger.info(
                 "Validation Summary: %i succeeded, %i failed, %i errors. %s",
                 validation_result.num_succeeds,
                 validation_result.num_fails,

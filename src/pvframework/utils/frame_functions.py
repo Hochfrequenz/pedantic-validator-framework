@@ -4,7 +4,8 @@ Contains some useful utility functions to be used in validator functions.
 import inspect
 from typing import Optional
 
-from bomf.validation.core import Parameter, Parameters, ValidationManager
+from pvframework.execution import ValidationManager
+from pvframework.validator import Parameter, Parameters
 
 
 def param(param_name: str) -> Parameter:

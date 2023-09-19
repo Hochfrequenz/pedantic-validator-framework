@@ -3,18 +3,19 @@ Contains functionality to handle all the ValidationErrors and creating error IDs
 """
 import asyncio
 import hashlib
+import logging
 import random
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, AsyncGenerator, Generic, Optional, TypeAlias
 
 from bidict import bidict
-from bomf.logging import logger
-from bomf.validation.core.types import DataSetT, MappedValidatorT, ValidatorT
-from bomf.validation.core.validator import Parameters
+
+from .types import DataSetT, MappedValidatorT, ValidatorT
+from .validator import Parameters
 
 if TYPE_CHECKING:
-    from bomf.validation.core.execution import ValidationManager
+    from .execution import ValidationManager
 
 
 def format_parameter_infos(
@@ -70,12 +71,7 @@ def _generate_new_id(identifier: _IdentifierType, last_id: Optional[_IDType] = N
     """
     Generate a new random id with taking the identifier as seed. If last_id is provided it will be used as seed instead.
     """
-    if last_id is not None:
-        logger.get().debug(
-            "Duplicated ID for %s and %s. Generating new ID...", identifier, _ERROR_ID_MAP.inverse[last_id]
-        )
-        random.seed(last_id)
-    else:
+    if last_id is None:
         module_name_hash = int(hashlib.blake2s((identifier[0] + identifier[1]).encode(), digest_size=4).hexdigest(), 16)
         random.seed(module_name_hash)
     # This range has no further meaning, but you have to define it.
@@ -96,6 +92,8 @@ def _get_error_id(identifier: _IdentifierType) -> _IDType:
         new_error_id = None
         while True:
             new_error_id = _generate_new_id(identifier, last_id=new_error_id)
+            # pylint: disable=unsupported-membership-test
+            # No clue why pylint thinks this is unsupported. The BidictBase class has a __contains__ method.
             if new_error_id not in _ERROR_ID_MAP.inverse:
                 break
         _ERROR_ID_MAP[identifier] = new_error_id
@@ -122,7 +120,7 @@ class ValidationError(RuntimeError):
         ].current_provided_params
         message = (
             f"{error_id}: {message_detail}\n"
-            f"\tDataSet: {data_set.__class__.__name__}(id={data_set.get_id()})\n"
+            f"\tDataSet: {data_set!r})\n"
             f"\tError ID: {error_id}\n"
             f"\tValidator function: {mapped_validator.name}"
         )
@@ -150,9 +148,10 @@ class ErrorHandler(Generic[DataSetT]):
     It can save one exception for each validator function.
     """
 
-    def __init__(self, data_set: DataSetT):
+    def __init__(self, data_set: DataSetT, logger: logging.Logger):
         self.data_set = data_set
         self.excs: dict[MappedValidatorT, list[ValidationError]] = {}
+        self._logger = logger
 
     # pylint: disable=too-many-arguments
     async def catch(
@@ -176,7 +175,7 @@ class ErrorHandler(Generic[DataSetT]):
             validation_manager,
             error_id,
         )
-        logger.get().exception(
+        self._logger.exception(
             str(error_nested),
             exc_info=error_nested,
         )

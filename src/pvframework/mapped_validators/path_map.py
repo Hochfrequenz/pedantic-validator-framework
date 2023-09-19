@@ -4,9 +4,11 @@ customizable MappedValidator you may be interested in the `QueryMappedValidator`
 """
 from typing import Any, Generator
 
-from bomf.validation.core import MappedValidator, Parameter, Parameters, ValidatorFunctionT, required_field
-from bomf.validation.core.types import DataSetT, ValidatorT
 from frozendict import frozendict
+
+from pvframework.types import DataSetT, ValidatorFunctionT, ValidatorT
+from pvframework.utils.query_object import required_field
+from pvframework.validator import MappedValidator, Parameter, Parameters
 
 
 class PathMappedValidator(MappedValidator[DataSetT, ValidatorFunctionT]):

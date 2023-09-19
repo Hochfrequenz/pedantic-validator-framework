@@ -1,42 +1,55 @@
 import asyncio
 import re
+from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any, Iterator, Optional
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from pvframework import Query, QueryMappedValidator, ValidationManager, Validator, optional_field, param, required_field
-from pvframework.core import ValidationError, ValidatorFunctionT
-from pvframework.core.types import AsyncValidatorFunction, MappedValidatorT, SyncValidatorFunction, ValidatorFunction
-from pvframework.model import Bo4eDataSet
-from pvframework.path_map import PathMappedValidator
+from pvframework import PathMappedValidator, Query, QueryMappedValidator, ValidationManager, Validator
+from pvframework.errors import ValidationError
+from pvframework.types import (
+    AsyncValidatorFunction,
+    MappedValidatorT,
+    SyncValidatorFunction,
+    ValidatorFunction,
+    ValidatorFunctionT,
+)
+from pvframework.utils import optional_field, param, required_field
+
+# pylint: disable=unused-argument, global-statement, comparison-with-callable
 
 
 class Wrapper(BaseModel):
     x: str
     z: Optional[str]
 
+    model_config = ConfigDict(frozen=True)
 
-class DataSetTest(Bo4eDataSet):
+
+@dataclass(frozen=True)
+class DataSetTest:
     x: str
     y: int
     z: Wrapper
     a: int = -1
 
 
-class SpecialDataSet(Bo4eDataSet):
-    x: list[Wrapper]
+class SpecialDataSet(BaseModel):
+    x: tuple[Wrapper, ...]
     y: str
+
+    model_config = ConfigDict(frozen=True)
 
 
 def iter_list(list_to_iter: list[Any]) -> Iterator[tuple[Any, str]]:
     return ((el, f"[{index}]") for index, el in enumerate(list_to_iter))
 
 
-dataset_instance = DataSetTest(x="lo16", y=16, z=Wrapper.construct(x="Hello"))
+dataset_instance = DataSetTest(x="lo16", y=16, z=Wrapper.model_construct(x="Hello"))
 special_dataset_instance = SpecialDataSet(
-    x=[Wrapper.construct(x="Hello"), Wrapper.construct(x="World"), Wrapper.construct(x="!")],
+    x=(Wrapper.model_construct(x="Hello"), Wrapper.model_construct(x="World"), Wrapper.model_construct(x="!")),
     y="lul",
 )
 finishing_order: list[ValidatorFunction]
@@ -93,7 +106,7 @@ def check_with_param_info(x: str, zz: str = "test"):
 
 def check_special_data_set(x: str, y: str):
     x_param = param("x")
-    assert re.match(r"x\[\d+\]\.x", x_param.param_id)
+    assert re.match(r"x\[\d+]\.x", x_param.param_id)
     assert x_param.provided
     finishing_order.append(check_special_data_set)
 
@@ -106,7 +119,7 @@ def check_special_data_set_optional(x: str, y: str = "Hello"):
 
 
 def check_with_param_info_fail(zz: str = "test"):
-    unmapped_param = param("zz")
+    _ = param("zz")
 
 
 def unprovided_but_required(zz: str):
@@ -128,8 +141,7 @@ def check_fail3(y: int) -> None:
 def check_different_fails(x: str):
     if x == "Hello":
         raise ValueError("Error 1")
-    else:
-        raise ValueError("Error 2")
+    raise ValueError("Error 2")
 
 
 def no_params():
@@ -490,7 +502,9 @@ class TestValidation:
                 {"x": Query().path("x").iter(iter_list).path("x"), "y": Query().path("y")},
             ),
         )
-        validation_summary = await validation_manager.validate(SpecialDataSet.construct(x=special_dataset_instance.x))
+        validation_summary = await validation_manager.validate(
+            SpecialDataSet.model_construct(x=special_dataset_instance.x)
+        )
         assert validation_summary.num_errors_total == 1
         assert "y not provided" in str(validation_summary.all_errors[0])
         assert len(finishing_order) == 3
