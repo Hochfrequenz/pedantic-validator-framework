@@ -57,3 +57,9 @@ exclude = ["/unittests"]
 [tool.hatch.build.targets.wheel]
 only-include = ["src"]
 sources = ["src"]
+
+[tool.pytest.ini_options]
+# When the mode is auto, all discovered async tests are considered asyncio-driven
+# even if they have no @pytest.mark.asyncio marker.
+# https://github.com/pytest-dev/pytest-asyncio#auto-mode
+asyncio_mode = "auto"
