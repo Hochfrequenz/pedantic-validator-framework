@@ -4,6 +4,7 @@
 ![Coverage status badge](https://github.com/Hochfrequenz/pedantic-validator-framework/workflows/Coverage/badge.svg)
 ![Linting status badge](https://github.com/Hochfrequenz/pedantic-validator-framework/workflows/Linting/badge.svg)
 ![Black status badge](https://github.com/Hochfrequenz/pedantic-validator-framework/workflows/Formatting/badge.svg)
+![PyPI](https://img.shields.io/pypi/v/pvframework)
 
 
 This package enables you to easily create functions to apply validation logic to your data. It is designed
