@@ -13,11 +13,6 @@ to work with arbitrary object structures. The validation function can be `async`
 Validation functions take arguments which are collected from a data structure instance on validation. The way how you
 collect the arguments is fully customizable. But we give some features to retrieve these data more easily.
 
-The package is [available on pypi](https://pypi.org/project/pvframework/):
-```bash
-pip install pvframework
-```
-
 ## Features
 - Functions can be `async` or synchronous.
 - Function arguments can be combined from anywhere of the data structure.
