@@ -141,7 +141,6 @@ class ValidationError(RuntimeError):
         self.provided_params = provided_params
 
 
-# pylint: disable=too-few-public-methods
 class ErrorHandler(Generic[DataSetT]):
     """
     This class provides functionality to easily log any occurring error.
