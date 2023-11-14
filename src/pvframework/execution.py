@@ -144,6 +144,7 @@ class ValidationManager(Generic[DataSetT]):
         headings: Optional[Iterable[str]] = (
             "Manager ID",
             "Validator function signature",
+            "Mapped fields",
             "Validator doc string",
             "Validating type",
         ),
@@ -153,6 +154,7 @@ class ValidationManager(Generic[DataSetT]):
         It contains the following information:
         - Manager ID
         - Validator function signature
+        - Mapped fields
         - Validator doc string
         - Validating type (error, warning)  # TODO: Implement this feature
 
@@ -171,6 +173,7 @@ class ValidationManager(Generic[DataSetT]):
                 (
                     self.manager_id,
                     f"{mapped_validator.name}{mapped_validator.validator.signature}",
+                    str(mapped_validator.provision_indicator()),
                     formatted_doc_string,
                     "error",
                 )
