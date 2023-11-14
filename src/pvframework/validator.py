@@ -151,6 +151,17 @@ class MappedValidator(ABC, Generic[DataSetT, ValidatorFunctionT]):
         parameters not provided the ValidationManager will catch a ValidationError.
         """
 
+    @abstractmethod
+    def provision_indicator(self) -> dict[str, str]:
+        """
+        Returns a dict of parameters => an indicator string which describes the parameter source.
+        E.g. something like
+        {
+            "is_sepa_zahler": "CustomerLoaderDataSet.banking_data.sepa_zahler",
+            "iban": "CustomerLoaderDataSet.banking_data.iban",
+        }
+        """
+
     def __repr__(self) -> str:
         return f"MappedValidator({self.name})"
 

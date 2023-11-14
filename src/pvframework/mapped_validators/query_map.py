@@ -73,12 +73,14 @@ class Query:
 
     def __init__(self):
         self._function_stack: list[Callable[[DataSetT], Iterator[IteratorReturnTypeWithException]]] = []
+        self._str = ""
 
     def path(self, attr_path: str) -> Self:
         """
         Adds the provided attribute path to the query
         """
         parent = self._function_stack[-1] if len(self._function_stack) > 0 else None
+        self._str += f".{attr_path}"
 
         def _iter_func(data_set: DataSetT) -> Iterator[IteratorReturnTypeWithException]:
             if parent is not None:
@@ -112,6 +114,7 @@ class Query:
         corresponding ID. The ID is arbitrary it is used for a better error output.
         """
         parent = self._function_stack[-1] if len(self._function_stack) > 0 else None
+        self._str += "[...]"
 
         def _iter_func(data_set: DataSetT) -> Iterator[IteratorReturnTypeWithException]:
             if parent is not None:
@@ -137,6 +140,9 @@ class Query:
         they will be handled by the error handler.
         """
         return QueryIterable(data_set, self._function_stack[-1], include_exceptions)
+
+    def __str__(self):
+        return self._str
 
 
 class QueryMappedValidator(MappedValidator[DataSetT, ValidatorFunctionT]):
@@ -192,6 +198,11 @@ class QueryMappedValidator(MappedValidator[DataSetT, ValidatorFunctionT]):
                         provided=True,
                     )
             yield Parameters(self, **parameter_dict)
+
+    def provision_indicator(self) -> dict[str, str]:
+        return {
+            param_name: str(self.param_map.get(param_name, "Unmapped")) for param_name in self.validator.param_names
+        }
 
     def param_sets(self, param_iterables: dict[str, QueryIterable]) -> Iterator[dict[str, Any] | Exception]:
         """

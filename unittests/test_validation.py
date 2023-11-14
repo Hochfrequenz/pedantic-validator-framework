@@ -65,6 +65,10 @@ def check_multiple_registration(x: str):
 
 
 async def check_x_expensive(x: str) -> None:
+    """
+    Just a heavy task to validate x.
+    This docstring is used to test the output of the csv renderer of the ValidationManager.
+    """
     await asyncio.sleep(0.3)
     finishing_order.append(check_x_expensive)
 
@@ -509,3 +513,21 @@ class TestValidation:
         assert "y not provided" in str(validation_summary.all_errors[0])
         assert len(finishing_order) == 3
         assert all(el == check_special_data_set_optional for el in finishing_order)
+
+    def test_validator_info_table(self):
+        validation_manager = ValidationManager[DataSetTest](manager_id="TestValidationManager")
+        validation_manager.register(PathMappedValidator(validator_check_x_expensive, {"x": "x"}))
+        validation_manager.register(
+            PathMappedValidator(validator_check_required_and_optional, {"zx": "z.x", "zz": "z.z"})
+        )
+
+        csv_table = validation_manager.get_csv_formatted_validator_infos()
+
+        assert isinstance(csv_table, str)
+        assert (
+            "Just a heavy task to validate x.\\n"
+            "This docstring is used to test the output of the csv renderer of the ValidationManager."
+        ) in csv_table
+        assert "TestValidationManager" in csv_table
+        assert "check_x_expensive" in csv_table
+        assert "error" in csv_table

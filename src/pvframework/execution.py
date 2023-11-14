@@ -3,12 +3,15 @@ Here is the main stuff. The ValidationManager bundles several mapped validators 
 these.
 """
 import asyncio
+import csv
 import logging
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import timedelta
 from enum import IntEnum, StrEnum
-from typing import Generic, Iterator, Optional
+from io import StringIO
+from typing import Generic, Iterable, Iterator, Optional
 
 import networkx as nx
 from typeguard import TypeCheckError, check_type
@@ -120,7 +123,8 @@ class ValidationManager(Generic[DataSetT]):
     provide a logger to the constructor which will be used instead if you need.
     """
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: Optional[logging.Logger] = None, manager_id: Optional[str] = None):
+        self.manager_id = manager_id if manager_id is not None else self.__class__.__name__
         self.dependency_graph: DependencyGraph = DependencyGraph()
         self.validators: dict[MappedValidatorSyncAsync, _ExecutionInfo] = {}
         self._runtime_execution_info: Optional[_RuntimeExecutionInfo] = None
@@ -134,6 +138,54 @@ class ValidationManager(Generic[DataSetT]):
         """
         assert self._runtime_execution_info is not None
         return self._runtime_execution_info
+
+    def get_csv_formatted_validator_infos(
+        self,
+        initial_value: str | StringIO | None = None,
+        headings: Optional[Iterable[str]] = (
+            "Manager ID",
+            "Validator function signature",
+            "Mapped fields",
+            "Validator doc string",
+            "Validating type",
+        ),
+    ) -> str:
+        """
+        Returns a csv formatted string containing information about the registered validators.
+        It contains the following information:
+        - Manager ID
+        - Validator function signature
+        - Mapped fields
+        - Validator doc string
+        - Validating type (error, warning)  # TODO: Implement this feature
+
+        You can override the default headings by providing an Iterable of strings. Alternatively, the headings can be
+        omitted by setting `headings` to None.
+        If you specify `initial_value`, the output will be appended to this value. Note, that if you supply a StringIO
+        object, it will modify this object.
+        """
+        if initial_value is None or isinstance(initial_value, str):
+            output = StringIO(initial_value=initial_value)
+        else:
+            output = initial_value
+        csv_writer = csv.writer(output)
+        if headings is not None:
+            csv_writer.writerow(headings)
+        for mapped_validator in self.validators:
+            formatted_doc_string = mapped_validator.validator.func.__doc__
+            if formatted_doc_string:
+                # Regex to escape newlines and remove unnecessary whitespace. https://regex101.com/r/N6wkYx/1
+                formatted_doc_string = re.sub(r"\n[ \t\r]*", "\\\\n", formatted_doc_string.strip())
+            csv_writer.writerow(
+                (
+                    self.manager_id,
+                    f"{mapped_validator.name}{mapped_validator.validator.signature}",
+                    str(mapped_validator.provision_indicator()),
+                    formatted_doc_string,
+                    "error",
+                )
+            )
+        return output.getvalue()
 
     def _dependency_graph_edges(
         self,
