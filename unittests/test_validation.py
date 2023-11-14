@@ -549,7 +549,8 @@ class TestValidation:
         validation_manager = ValidationManager[DataSetTest](manager_id="TestValidationManager")
         validation_manager.register(PathMappedValidator(validator_check_x_expensive, {"x": "x"}))
         validation_manager.register(
-            PathMappedValidator(validator_check_required_and_optional, {"zx": "z.x", "zz": "z.z"})
+            PathMappedValidator(validator_check_required_and_optional, {"zx": "z.x", "zz": "z.z"}),
+            mode=ValidationMode.WARNING,
         )
 
         csv_table = validation_manager.get_csv_formatted_validator_infos()
@@ -561,4 +562,5 @@ class TestValidation:
         ) in csv_table
         assert "TestValidationManager" in csv_table
         assert "check_x_expensive" in csv_table
-        assert "error" in csv_table
+        assert ValidationMode.ERROR.value in csv_table
+        assert ValidationMode.WARNING.value in csv_table

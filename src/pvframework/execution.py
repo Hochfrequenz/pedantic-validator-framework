@@ -183,7 +183,7 @@ class ValidationManager(Generic[DataSetT]):
                     f"{mapped_validator.name}{mapped_validator.validator.signature}",
                     str(mapped_validator.provision_indicator()),
                     formatted_doc_string,
-                    "error",
+                    self.validators[mapped_validator].mode.value,
                 )
             )
         return output.getvalue()
