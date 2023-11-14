@@ -161,6 +161,8 @@ class ValidationManager(Generic[DataSetT]):
 
         You can override the default headings by providing an Iterable of strings. Alternatively, The headings can be
         omitted by setting `headings` to None.
+        If you specify `initial_value`, the output will be appended to this value. Note, that if you supply a StringIO
+        object, it will modify this object.
         """
         if initial_value is None or isinstance(initial_value, str):
             output = StringIO(initial_value=initial_value)
