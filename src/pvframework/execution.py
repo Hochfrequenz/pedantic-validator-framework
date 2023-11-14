@@ -17,7 +17,7 @@ import networkx as nx
 from typeguard import TypeCheckError, check_type
 
 from .analysis import ValidationResult
-from .errors import ErrorHandler, ValidationError
+from .errors import ErrorHandler, ValidationError, ValidationMode
 from .types import DataSetT, MappedValidatorSyncAsync, SyncValidatorFunction
 from .validator import MappedValidator, Parameters, is_async, is_sync
 
@@ -48,6 +48,7 @@ class _ExecutionInfo(Generic[DataSetT]):
 
     depends_on: set[MappedValidatorSyncAsync]
     timeout: Optional[timedelta]
+    mode: ValidationMode
 
 
 @dataclass
@@ -210,6 +211,7 @@ class ValidationManager(Generic[DataSetT]):
         mapped_validator: MappedValidatorSyncAsync,
         depends_on: Optional[set[MappedValidatorSyncAsync]] = None,
         timeout: Optional[timedelta] = None,
+        mode: ValidationMode = ValidationMode.ERROR,
     ):
         """
         Register a mapped validator to call upon running `validate`.
@@ -222,11 +224,11 @@ class ValidationManager(Generic[DataSetT]):
         """
         dependency_graph_edges = self._dependency_graph_edges(mapped_validator, depends_on)
         self.validators[mapped_validator] = _ExecutionInfo(
-            depends_on=depends_on if depends_on is not None else set(), timeout=timeout
+            depends_on=depends_on if depends_on is not None else set(), timeout=timeout, mode=mode
         )
         self.dependency_graph.add_node(mapped_validator)
         self.dependency_graph.add_edges_from(dependency_graph_edges)
-        self._logger.debug("Registered validator: %s", repr(mapped_validator))
+        self._logger.debug("Registered validator: %s", str(mapped_validator))
 
     async def _dependency_errored(self, current_mapped_validator: MappedValidatorSyncAsync) -> bool:
         """
@@ -234,9 +236,9 @@ class ValidationManager(Generic[DataSetT]):
         current validator to be cancelled.
         """
         dep_exceptions: dict[MappedValidatorSyncAsync, list[ValidationError]] = {
-            _dep: self.info.error_handler.excs[_dep]
+            _dep: self.info.error_handler.error_excs[_dep]
             for _dep in self.validators[current_mapped_validator].depends_on
-            if _dep in self.info.error_handler.excs
+            if _dep in self.info.error_handler.error_excs
         }
         if len(dep_exceptions) > 0:
             await self.info.error_handler.catch(
@@ -301,14 +303,15 @@ class ValidationManager(Generic[DataSetT]):
             if not await self._are_params_ok(mapped_validator, params_or_exc):
                 continue
             assert isinstance(params_or_exc, Parameters)
+            execution_info = self.validators[mapped_validator]
 
-            async with self.info.error_handler.pokemon_catcher(mapped_validator, self):
-                if self.validators[mapped_validator].timeout is not None:
+            async with self.info.error_handler.pokemon_catcher(mapped_validator, self, mode=execution_info.mode):
+                if execution_info.timeout is not None:
                     async with asyncio.timeout(
-                        self.validators[mapped_validator].timeout.total_seconds()  # type:ignore[union-attr]
+                        execution_info.timeout.total_seconds()  # type:ignore[union-attr]
                     ):
                         # mypy somehow is too stupid here to understand that the if-statement from the line above
-                        # ensures that self.validators[mapped_validator].timeout is not None
+                        # ensures that execution_info.timeout is not None
                         if is_async(mapped_validator):
                             await mapped_validator.validator.func(**params_or_exc.param_dict)
                         else:
@@ -335,7 +338,7 @@ class ValidationManager(Generic[DataSetT]):
                 continue
             assert isinstance(params_or_exc, Parameters)
 
-            async with self.info.error_handler.pokemon_catcher(mapped_validator, self):
+            async with self.info.error_handler.pokemon_catcher(mapped_validator, self, mode=execution_info.mode):
                 if execution_info.timeout is not None:
                     async with asyncio.timeout(execution_info.timeout.total_seconds()):
                         mapped_validator.validator.func(**params_or_exc.param_dict)
@@ -393,7 +396,7 @@ class ValidationManager(Generic[DataSetT]):
                 hash(data_set)
             except TypeError as error:
                 raise TypeError(
-                    f"The data set {data_set} is not hashable. " "This is required for the error handler."
+                    f"The data set {data_set} is not hashable. This is required for the error handler."
                 ) from error
             self._runtime_execution_info = _RuntimeExecutionInfo(
                 data_set=data_set,

@@ -8,7 +8,7 @@ import pytest
 from pydantic import BaseModel, ConfigDict
 
 from pvframework import PathMappedValidator, Query, QueryMappedValidator, ValidationManager, Validator
-from pvframework.errors import ValidationError
+from pvframework.errors import ValidationError, ValidationMode
 from pvframework.types import (
     AsyncValidatorFunction,
     MappedValidatorT,
@@ -294,6 +294,37 @@ class TestValidation:
         assert any(
             "Execution abandoned due to failing dependent validators" in sub_exception_msg
             for sub_exception_msg in sub_exception_msgs
+        )
+
+    async def test_warning_validation(self):
+        """
+        Tests if a warning validation behaves as expected.
+        """
+        global finishing_order
+        finishing_order = []
+        validation_manager = ValidationManager[DataSetTest]()
+        validation_manager.register(
+            PathMappedValidator(validator_check_y_positive, {"y": "y"}), mode=ValidationMode.WARNING
+        )
+        validation_manager.register(PathMappedValidator(validator_check_fail, {"x": "x"}), mode=ValidationMode.WARNING)
+        validation_manager.register(PathMappedValidator(validator_check_fail2, {"y": "y"}), mode=ValidationMode.WARNING)
+        validation_manager.register(
+            PathMappedValidator(validator_check_fail3, {"y": "y"}),
+            depends_on={PathMappedValidator(validator_check_fail, {"x": "x"})},
+            mode=ValidationMode.WARNING,
+        )
+        validation_summary = await validation_manager.validate(dataset_instance)
+
+        assert validation_summary.num_succeeds == 1
+        assert validation_summary.num_warnings_total == 3
+        sub_exception_msgs = {str(exception) for exception in validation_summary.all_warnings}
+        assert any("I failed (on purpose! :O)" in sub_exception_msg for sub_exception_msg in sub_exception_msgs)
+        assert any(
+            "I failed (on purpose! :O - again :OOO)" in sub_exception_msg for sub_exception_msg in sub_exception_msgs
+        )
+        assert any("This shouldn't be raised" in sub_exception_msg for sub_exception_msg in sub_exception_msgs), (
+            "This warning should be present because the dependant validator threw a warning "
+            "and therefore does not fail the validation process."
         )
 
     @pytest.mark.parametrize(
