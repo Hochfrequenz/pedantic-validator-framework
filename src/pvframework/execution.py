@@ -172,7 +172,7 @@ class ValidationManager(Generic[DataSetT]):
         csv_writer = csv.writer(output)
         if headings is not None:
             csv_writer.writerow(headings)
-        for mapped_validator in self.validators:
+        for mapped_validator, execution_info in self.validators.items():
             formatted_doc_string = mapped_validator.validator.func.__doc__
             if formatted_doc_string:
                 # Regex to escape newlines and remove unnecessary whitespace. https://regex101.com/r/N6wkYx/1
@@ -183,7 +183,7 @@ class ValidationManager(Generic[DataSetT]):
                     f"{mapped_validator.name}{mapped_validator.validator.signature}",
                     str(mapped_validator.provision_indicator()),
                     formatted_doc_string,
-                    self.validators[mapped_validator].mode.value,
+                    execution_info.mode.value,
                 )
             )
         return output.getvalue()
