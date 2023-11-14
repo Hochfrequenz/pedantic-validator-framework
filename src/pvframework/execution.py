@@ -141,6 +141,7 @@ class ValidationManager(Generic[DataSetT]):
 
     def get_csv_formatted_validator_infos(
         self,
+        initial_value: str | StringIO | None = None,
         headings: Optional[Iterable[str]] = (
             "Manager ID",
             "Validator function signature",
@@ -161,7 +162,10 @@ class ValidationManager(Generic[DataSetT]):
         You can override the default headings by providing an Iterable of strings. Alternatively, The headings can be
         omitted by setting `headings` to None.
         """
-        output = StringIO()
+        if initial_value is None or isinstance(initial_value, str):
+            output = StringIO(initial_value=initial_value)
+        else:
+            output = initial_value
         csv_writer = csv.writer(output)
         if headings is not None:
             csv_writer.writerow(headings)
