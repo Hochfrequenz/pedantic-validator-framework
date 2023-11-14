@@ -6,6 +6,7 @@ import hashlib
 import logging
 import random
 from contextlib import asynccontextmanager
+from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING, AsyncGenerator, Generic, Optional, TypeAlias
 
@@ -16,6 +17,19 @@ from .validator import Parameters
 
 if TYPE_CHECKING:
     from .execution import ValidationManager
+
+
+class ValidationMode(StrEnum):
+    """
+    The validator mode defines how the validator will be executed.
+    If the mode is set to `ValidationMode.ERROR`, the data set will be marked as failed if the validator raises an
+    exception.
+    If the mode is set to `ValidationMode.WARNING`, the data set will be marked as succeeded if the validator raises an
+    exception but the exception will be logged as warning.
+    """
+
+    ERROR = "error"
+    WARNING = "warning"
 
 
 def format_parameter_infos(
@@ -120,7 +134,7 @@ class ValidationError(RuntimeError):
         ].current_provided_params
         message = (
             f"{error_id}: {message_detail}\n"
-            f"\tDataSet: {data_set!r})\n"
+            f"\tDataSet: {data_set})\n"
             f"\tError ID: {error_id}\n"
             f"\tValidator function: {mapped_validator.name}"
         )
@@ -149,7 +163,8 @@ class ErrorHandler(Generic[DataSetT]):
 
     def __init__(self, data_set: DataSetT, logger: logging.Logger):
         self.data_set = data_set
-        self.excs: dict[MappedValidatorT, list[ValidationError]] = {}
+        self.error_excs: dict[MappedValidatorT, list[ValidationError]] = {}
+        self.warning_excs: dict[MappedValidatorT, list[ValidationError]] = {}
         self._logger = logger
 
     # pylint: disable=too-many-arguments
@@ -160,6 +175,7 @@ class ErrorHandler(Generic[DataSetT]):
         mapped_validator: MappedValidatorT,
         validation_manager: "ValidationManager[DataSetT]",
         custom_error_id: Optional[int] = None,
+        mode: ValidationMode = ValidationMode.ERROR,
     ):
         """
         Logs a new validation error with the defined message. The `error` parameter will be set as `__cause__` of the
@@ -174,14 +190,24 @@ class ErrorHandler(Generic[DataSetT]):
             validation_manager,
             error_id,
         )
-        self._logger.exception(
+
+        if mode == ValidationMode.ERROR:
+            log_function = self._logger.exception
+            excs_dict = self.error_excs
+        elif mode == ValidationMode.WARNING:
+            log_function = self._logger.warning
+            excs_dict = self.warning_excs
+        else:
+            raise ValueError(f"Unknown validation mode: {mode}")
+
+        log_function(
             str(error_nested),
             exc_info=error_nested,
         )
         async with asyncio.Lock():
-            if mapped_validator not in self.excs:
-                self.excs[mapped_validator] = []
-            self.excs[mapped_validator].append(error_nested)
+            if mapped_validator not in excs_dict:
+                excs_dict[mapped_validator] = []
+            excs_dict[mapped_validator].append(error_nested)
 
     @asynccontextmanager
     async def pokemon_catcher(
@@ -189,6 +215,7 @@ class ErrorHandler(Generic[DataSetT]):
         mapped_validator: MappedValidatorT,
         validation_manager: "ValidationManager[DataSetT]",
         custom_error_id: Optional[int] = None,
+        mode: ValidationMode = ValidationMode.ERROR,
     ) -> AsyncGenerator[None, None]:
         """
         This is an asynchronous context manager to easily implement a pokemon-catcher to catch any errors inside
@@ -205,6 +232,7 @@ class ErrorHandler(Generic[DataSetT]):
                 mapped_validator,
                 validation_manager,
                 custom_error_id,
+                mode,
             )
         except Exception as error:  # pylint: disable=broad-exception-caught
-            await self.catch(str(error), error, mapped_validator, validation_manager, custom_error_id)
+            await self.catch(str(error), error, mapped_validator, validation_manager, custom_error_id, mode)

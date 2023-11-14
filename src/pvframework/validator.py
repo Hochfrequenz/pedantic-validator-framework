@@ -82,7 +82,7 @@ class Validator(Generic[DataSetT, ValidatorFunctionT]):
     def __ne__(self, other):
         return not isinstance(other, Validator) or self.func != other.func
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         return f"Validator({self.name})"
 
 
@@ -99,7 +99,7 @@ class Parameter(Generic[DataSetT]):
         self.param_id = param_id
         self.provided = provided
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         return f"Parameter({self.param_id} -> {self.name}: {self.value})"
 
 
@@ -162,7 +162,7 @@ class MappedValidator(ABC, Generic[DataSetT, ValidatorFunctionT]):
         }
         """
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         return f"MappedValidator({self.name})"
 
     @property

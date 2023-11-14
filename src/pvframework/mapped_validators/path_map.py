@@ -51,7 +51,7 @@ class PathMappedValidator(MappedValidator[DataSetT, ValidatorFunctionT]):
     def __hash__(self):
         return hash(self.param_map) + hash(self.validator)
 
-    def __repr__(self):
+    def __str__(self):
         return f"PathMappedValidator({self.validator.name}, {dict(self.param_map)})"
 
     def provide(self, data_set: DataSetT) -> Generator[Parameters[DataSetT] | Exception, None, None]:
