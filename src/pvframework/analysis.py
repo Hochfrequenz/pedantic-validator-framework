@@ -15,6 +15,7 @@ def _extract_error_id(validation_error: ValidationError) -> _IDType:
     return validation_error.error_id
 
 
+# pylint: disable=too-many-instance-attributes
 class ValidationResult(Generic[DataSetT]):
     """
     The function `ValidationManager.validate` will return an instance of this class. This class provides properties
