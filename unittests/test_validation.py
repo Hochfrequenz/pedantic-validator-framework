@@ -555,12 +555,23 @@ class TestValidation:
 
         csv_table = validation_manager.get_csv_formatted_validator_infos()
 
+        validation_manager2 = ValidationManager[DataSetTest](manager_id="TestValidationManager2")
+        validation_manager2.register(PathMappedValidator(validator_check_y_positive, {"y": "y"}))
+        validation_manager2.register(
+            PathMappedValidator(validator_check_required_and_optional_with_utility, {"z": "z"}),
+            mode=ValidationMode.WARNING,
+        )
+
+        csv_table = validation_manager.get_csv_formatted_validator_infos()
+        csv_table = validation_manager2.get_csv_formatted_validator_infos(headings=None, initial_value=csv_table)
+
         assert isinstance(csv_table, str)
         assert (
             "Just a heavy task to validate x.\\n"
             "This docstring is used to test the output of the csv renderer of the ValidationManager."
         ) in csv_table
         assert "TestValidationManager" in csv_table
+        assert "TestValidationManager2" in csv_table
         assert "check_x_expensive" in csv_table
         assert ValidationMode.ERROR.value in csv_table
         assert ValidationMode.WARNING.value in csv_table

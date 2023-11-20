@@ -10,7 +10,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import timedelta
 from enum import IntEnum, StrEnum
-from io import StringIO
+from io import SEEK_END, StringIO
 from typing import Generic, Iterable, Iterator, Optional
 
 import networkx as nx
@@ -167,6 +167,7 @@ class ValidationManager(Generic[DataSetT]):
         """
         if initial_value is None or isinstance(initial_value, str):
             output = StringIO(initial_value=initial_value)
+            output.seek(0, SEEK_END)
         else:
             output = initial_value
         csv_writer = csv.writer(output)
