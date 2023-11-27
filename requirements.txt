@@ -6,7 +6,7 @@
 #
 bidict==0.22.1
     # via -r requirements.in
-frozendict==2.3.8
+frozendict==2.3.9
     # via -r requirements.in
 networkx==3.2.1
     # via -r requirements.in
