@@ -402,7 +402,7 @@ class TestValidation:
         validation_summary = await validation_manager.validate(dataset_instance)
 
         assert validation_summary.num_errors_total == 1
-        assert "'z.z' does not exist" in str(validation_summary.all_errors[0])
+        assert "z.z not provided" in str(validation_summary.all_errors[0])
 
     async def test_multiple_validator_registration(self):
         global finishing_order

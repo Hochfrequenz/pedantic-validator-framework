@@ -179,7 +179,7 @@ class QueryMappedValidator(MappedValidator[DataSetT, ValidatorFunctionT]):
                 if isinstance(param_value, Exception):
                     assert param_name in self.validator.optional_param_names, (
                         "If the parameter is required but not supplied you should yield an exception "
-                        "in `paran_sets` directly. The dictionary of parameters should only contain exceptions if"
+                        "in `param_sets` directly. The dictionary of parameters should only contain exceptions if"
                         "they are negligible aka the parameter is optional."
                     )
                     parameter_dict[param_name] = Parameter(
