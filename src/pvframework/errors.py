@@ -47,8 +47,11 @@ def format_parameter_infos(
         is_required = (
             validator.signature.parameters[param_name].default == validator.signature.parameters[param_name].empty
         )
+        param_value = provided_params[param_name].value if is_provided else param.default
+        if isinstance(param_value, str):
+            param_value = f"'{param_value}'"
         param_description = (
-            f"value='{provided_params[param_name].value if is_provided else param.default}', "
+            f"value={param_value}, "
             f"id='{provided_params[param_name].param_id if param_name in provided_params else 'unprovided'}', "
             f"{'required' if is_required else 'optional'}, "
             f"{'provided' if is_provided else 'unprovided'}"
