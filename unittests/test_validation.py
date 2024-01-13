@@ -402,7 +402,7 @@ class TestValidation:
         validation_summary = await validation_manager.validate(dataset_instance)
 
         assert validation_summary.num_errors_total == 1
-        assert "z.z not provided" in str(validation_summary.all_errors[0])
+        assert "z.z: value not provided" in str(validation_summary.all_errors[0])
 
     async def test_multiple_validator_registration(self):
         global finishing_order
@@ -541,7 +541,7 @@ class TestValidation:
             SpecialDataSet.model_construct(x=special_dataset_instance.x)
         )
         assert validation_summary.num_errors_total == 1
-        assert "y not provided" in str(validation_summary.all_errors[0])
+        assert "y: value not provided" in str(validation_summary.all_errors[0])
         assert len(finishing_order) == 3
         assert all(el == check_special_data_set_optional for el in finishing_order)
 

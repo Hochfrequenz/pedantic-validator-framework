@@ -67,7 +67,7 @@ class PathMappedValidator(MappedValidator[DataSetT, ValidatorFunctionT]):
                 provided = True
             except AttributeError as error:
                 if param_name in self.validator.required_param_names:
-                    query_error = AttributeError(f"{attr_path} not provided")
+                    query_error = AttributeError(f"{attr_path}: value not provided")
                     query_error.__cause__ = error
                     yield query_error
                     skip = True

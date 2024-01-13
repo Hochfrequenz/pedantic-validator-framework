@@ -132,10 +132,14 @@ class ValidationError(RuntimeError):
         provided_params = validation_manager.info.running_tasks[
             validation_manager.info.tasks[mapped_validator]
         ].current_provided_params
+        data_set_str = str(data_set)
+        if len(data_set_str) > 80:
+            data_set_str = data_set_str[:77] + "..."
         message = (
-            f"{error_id}: {message_detail}\n"
-            f"\tDataSet: {data_set})\n"
+            f"{error_id}, {type(cause).__name__}: {message_detail}\n"
+            f"\tDataSet: {data_set_str}\n"
             f"\tError ID: {error_id}\n"
+            f"\tError type: {type(cause).__name__}\n"
             f"\tValidator function: {mapped_validator.name}"
         )
         if provided_params is not None:
@@ -149,7 +153,7 @@ class ValidationError(RuntimeError):
         self.cause = cause
         self.data_set = data_set
         self.mapped_validator = mapped_validator
-        self.validator_set = validation_manager
+        self.validation_manager = validation_manager
         self.error_id = error_id
         self.message_detail = message_detail
         self.provided_params = provided_params

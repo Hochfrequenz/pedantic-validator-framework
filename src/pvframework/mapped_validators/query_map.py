@@ -92,7 +92,7 @@ class Query:
                         sub_el: Any = required_field(parent_el[0], attr_path, Any)
                         yield sub_el, f"{parent_el[1]}.{attr_path}"
                     except AttributeError as error:
-                        query_error = AttributeError(f"{parent_el[1]}.{attr_path} not provided")
+                        query_error = AttributeError(f"{parent_el[1]}.{attr_path}: value not provided")
                         query_error.__cause__ = error
                         yield query_error
             else:
@@ -100,7 +100,7 @@ class Query:
                     sub_el = required_field(data_set, attr_path, Any)
                     yield sub_el, attr_path
                 except AttributeError as error:
-                    query_error = AttributeError(f"{attr_path} not provided")
+                    query_error = AttributeError(f"{attr_path}: value not provided")
                     query_error.__cause__ = error
                     yield query_error
 
