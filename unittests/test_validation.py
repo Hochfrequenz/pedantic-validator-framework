@@ -452,14 +452,14 @@ class TestValidation:
         with pytest.raises(RuntimeError) as error:
             param("x")
         assert (
-            "You can call this function only directly from inside a function "
-            "which is executed by the validation framework" == str(error.value)
+            "This function only works if it is called somewhere inside a validator function "
+            "(must be in the function stack) which is executed by the validation framework" == str(error.value)
         )
         with pytest.raises(RuntimeError) as error:
             TestValidation.wrapper_without_self_for_coverage()
         assert (
-            "You can call this function only directly from inside a function "
-            "which is executed by the validation framework" == str(error.value)
+            "This function only works if it is called somewhere inside a validator function "
+            "(must be in the function stack) which is executed by the validation framework" == str(error.value)
         )
 
     async def test_error_ids(self):

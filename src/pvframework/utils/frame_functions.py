@@ -25,20 +25,27 @@ def param(param_name: str) -> Parameter:
     """
     call_stack = inspect.stack()
     # call_stack[0] -> this function
-    # call_stack[1] -> must be the validator function
-    # call_stack[2] -> should be either `_execute_sync_validator` or `_execute_async_validator`
+    # call_stack[...]
+    # call_stack[i-1] -> must be the validator function
+    # call_stack[i] -> should be either `_execute_sync_validator` or `_execute_async_validator`
+    frame_info_candidate = None
+    for frame_info in call_stack[2:]:
+        if frame_info.function in ("_execute_sync_validator", "_execute_async_validator"):
+            frame_info_candidate = frame_info
+            break
     validation_manager: Optional[ValidationManager] = None
-    try:
-        validation_manager = call_stack[2].frame.f_locals["self"]
-        if not isinstance(validation_manager, ValidationManager):
-            validation_manager = None
-    except KeyError:
-        pass
+    if frame_info_candidate is not None:
+        try:
+            validation_manager = frame_info_candidate.frame.f_locals["self"]
+            if not isinstance(validation_manager, ValidationManager):
+                validation_manager = None
+        except KeyError:
+            pass
 
     if validation_manager is None:
         raise RuntimeError(
-            "You can call this function only directly from inside a function "
-            "which is executed by the validation framework"
+            "This function only works if it is called somewhere inside a validator function "
+            "(must be in the function stack) which is executed by the validation framework"
         )
 
     provided_params: Optional[Parameters] = validation_manager.info.current_provided_params
