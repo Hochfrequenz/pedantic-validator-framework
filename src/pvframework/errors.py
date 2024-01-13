@@ -50,9 +50,11 @@ def format_parameter_infos(
         param_value = provided_params[param_name].value if is_provided else param.default
         if isinstance(param_value, str):
             param_value = f"'{param_value}'"
+        if param_value is None:
+            param_value = "None"
         param_description = (
             f"value={param_value}, "
-            f"id='{provided_params[param_name].param_id if param_name in provided_params else 'unprovided'}', "
+            f"id={provided_params[param_name].param_id if param_name in provided_params else 'unprovided'}, "
             f"{'required' if is_required else 'optional'}, "
             f"{'provided' if is_provided else 'unprovided'}"
         )
@@ -145,13 +147,17 @@ class ValidationError(RuntimeError):
             f"\tError type: {type(cause).__name__}\n"
             f"\tValidator function: {mapped_validator.name}"
         )
-        if provided_params is not None:
+        if provided_params is not None or hasattr(cause, "__parameter_infos__"):
+            if provided_params is None:
+                provided_params = cause.__parameter_infos__
             formatted_param_infos = format_parameter_infos(
                 mapped_validator.validator,
                 provided_params,
                 start_indent="\t\t",
             )
             message += f"\n\tParameter information: \n{formatted_param_infos}"
+        else:
+            message += "\n\tParameter information: No info"
         super().__init__(message)
         self.cause = cause
         self.data_set = data_set

@@ -256,6 +256,7 @@ class ValidationManager(Generic[DataSetT]):
     async def _are_params_ok(
         self, mapped_validator: MappedValidatorSyncAsync, params_or_exc: Parameters[DataSetT] | Exception
     ) -> bool:
+        self.info.current_provided_params = params_or_exc if not isinstance(params_or_exc, Exception) else None
         if isinstance(params_or_exc, Exception):
             await self.info.error_handler.catch(
                 str(params_or_exc),
@@ -265,7 +266,6 @@ class ValidationManager(Generic[DataSetT]):
                 custom_error_id=_CustomErrorIDS.PARAM_PROVIDER_ERRORED,
             )
             return False
-        self.info.current_provided_params = params_or_exc
         for param_name, param in params_or_exc.items():
             try:
                 check_type(
