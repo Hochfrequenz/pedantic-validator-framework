@@ -147,9 +147,7 @@ class ValidationError(RuntimeError):
             f"\tError type: {type(cause).__name__}\n"
             f"\tValidator function: {mapped_validator.name}"
         )
-        if provided_params is not None or hasattr(cause, "__parameter_infos__"):
-            if provided_params is None:
-                provided_params = cause.__parameter_infos__
+        if provided_params is not None:
             formatted_param_infos = format_parameter_infos(
                 mapped_validator.validator,
                 provided_params,
