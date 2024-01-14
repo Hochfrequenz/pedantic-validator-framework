@@ -24,12 +24,14 @@ def optional_field(obj: Any, attribute_path: str, attribute_type: type[AttrT]) -
 
 
 @overload
-def required_field(obj: Any, attribute_path: str, attribute_type: type[AttrT]) -> AttrT:
+def required_field(
+    obj: Any, attribute_path: str, attribute_type: type[AttrT], param_base_path: Optional[str] = None
+) -> AttrT:
     ...
 
 
 @overload
-def required_field(obj: Any, attribute_path: str, attribute_type: Any) -> Any:
+def required_field(obj: Any, attribute_path: str, attribute_type: Any, param_base_path: Optional[str] = None) -> Any:
     ...
 
 
