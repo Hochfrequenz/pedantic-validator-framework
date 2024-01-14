@@ -256,6 +256,7 @@ class ValidationManager(Generic[DataSetT]):
     async def _are_params_ok(
         self, mapped_validator: MappedValidatorSyncAsync, params_or_exc: Parameters[DataSetT] | Exception
     ) -> bool:
+        self.info.current_provided_params = params_or_exc if not isinstance(params_or_exc, Exception) else None
         if isinstance(params_or_exc, Exception):
             await self.info.error_handler.catch(
                 str(params_or_exc),
@@ -265,18 +266,21 @@ class ValidationManager(Generic[DataSetT]):
                 custom_error_id=_CustomErrorIDS.PARAM_PROVIDER_ERRORED,
             )
             return False
-        try:
-            self.info.current_provided_params = params_or_exc
-            for param_name, param in params_or_exc.items():
+        for param_name, param in params_or_exc.items():
+            try:
                 check_type(
                     param.value,
                     mapped_validator.validator.signature.parameters[param_name].annotation,
                 )
-        except TypeCheckError as error:
-            await self.info.error_handler.catch(
-                str(error), error, mapped_validator, self, custom_error_id=_CustomErrorIDS.PARAM_TYPE_MISMATCH
-            )
-            return False
+            except TypeCheckError as error:
+                await self.info.error_handler.catch(
+                    f"{param.param_id}: {error}",
+                    error,
+                    mapped_validator,
+                    self,
+                    custom_error_id=_CustomErrorIDS.PARAM_TYPE_MISMATCH,
+                )
+                return False
         return True
 
     async def _execute_async_validator(
