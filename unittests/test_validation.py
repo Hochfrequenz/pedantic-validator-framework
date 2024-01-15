@@ -91,7 +91,7 @@ def check_required_and_optional(zx: str, zz: str | None = None) -> None:
 
 
 def check_required_and_optional_with_utility(z: Wrapper) -> None:
-    assert required_field(z, "x", str) == "Hello"
+    assert required_field(z, "x", str, param_base_path=param("z").param_id) == "Hello"
     assert optional_field(z, "z", str) is None
 
 
