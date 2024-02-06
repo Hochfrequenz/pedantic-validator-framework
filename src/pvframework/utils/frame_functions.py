@@ -1,6 +1,7 @@
 """
 Contains some useful utility functions to be used in validator functions.
 """
+
 import inspect
 from typing import Optional
 

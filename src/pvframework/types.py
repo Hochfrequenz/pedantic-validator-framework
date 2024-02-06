@@ -1,6 +1,7 @@
 """
 Contains the types used in the validation framework
 """
+
 from typing import TYPE_CHECKING, Any, Callable, Coroutine, Protocol, TypeAlias, TypeVar
 
 if TYPE_CHECKING:
@@ -12,8 +13,7 @@ class Hashable(Protocol):
     A protocol that defines the __hash__ method.
     """
 
-    def __hash__(self) -> int:
-        ...
+    def __hash__(self) -> int: ...
 
 
 DataSetT = TypeVar("DataSetT", bound=Hashable)

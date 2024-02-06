@@ -1,6 +1,7 @@
 """
 Contains some useful utility functions to be used in validator functions.
 """
+
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, overload
 
 from typeguard import TypeCheckError, check_type
@@ -26,13 +27,13 @@ def optional_field(obj: Any, attribute_path: str, attribute_type: type[AttrT]) -
 @overload
 def required_field(
     obj: Any, attribute_path: str, attribute_type: type[AttrT], param_base_path: Optional[str] = None
-) -> AttrT:
-    ...
+) -> AttrT: ...
 
 
 @overload
-def required_field(obj: Any, attribute_path: str, attribute_type: Any, param_base_path: Optional[str] = None) -> Any:
-    ...
+def required_field(
+    obj: Any, attribute_path: str, attribute_type: Any, param_base_path: Optional[str] = None
+) -> Any: ...
 
 
 def required_field(obj: Any, attribute_path: str, attribute_type: Any, param_base_path: Optional[str] = None) -> Any:

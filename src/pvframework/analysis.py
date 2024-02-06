@@ -1,6 +1,7 @@
 """
 Contains functionality to analyze the result of a validation process
 """
+
 import itertools
 from typing import TYPE_CHECKING, Generic, Optional
 
