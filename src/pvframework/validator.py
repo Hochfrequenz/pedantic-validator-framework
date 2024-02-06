@@ -2,6 +2,7 @@
 Contains functionality to build up a box of information around a validator function before registering it to a
 ValidationManager. This reduces complexity inside the ValidationManager.
 """
+
 import asyncio
 import inspect
 import logging
@@ -174,15 +175,13 @@ class MappedValidator(ABC, Generic[DataSetT, ValidatorFunctionT]):
 @overload
 def is_async(
     validator: "MappedValidatorT",
-) -> TypeGuard["MappedValidator[Any, AsyncValidatorFunction]"]:
-    ...
+) -> TypeGuard["MappedValidator[Any, AsyncValidatorFunction]"]: ...
 
 
 @overload
 def is_async(
     validator: "ValidatorT",
-) -> TypeGuard["Validator[Any, AsyncValidatorFunction]"]:
-    ...
+) -> TypeGuard["Validator[Any, AsyncValidatorFunction]"]: ...
 
 
 def is_async(

@@ -1,6 +1,7 @@
 """
 This module contains the ParallelQueryMappedValidator class.
 """
+
 from typing import Any, Iterator, Optional
 
 from pvframework.types import DataSetT, ValidatorFunctionT

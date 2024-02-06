@@ -2,6 +2,7 @@
 Contains a PathMappedValidator which gets the values from the data set in a very simple way. If you need a more
 customizable MappedValidator you may be interested in the `QueryMappedValidator`.
 """
+
 from typing import Any, Generator
 
 from frozendict import frozendict

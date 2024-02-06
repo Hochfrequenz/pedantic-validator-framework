@@ -2,6 +2,7 @@
 Contains logic to retrieve the data from the data sets in a more complex and more general manner than the
 PathMappedValidator. With this it is e.g. possible to iterate through lists and execute the validator for each element.
 """
+
 import itertools
 from collections import OrderedDict
 from typing import Any, Callable, Generator, Iterable, Iterator, Optional, Self, TypeAlias
