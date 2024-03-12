@@ -126,8 +126,7 @@ class Query:
                     for child_el in iter_func(parent_el[0]):
                         yield child_el[0], parent_el[1] + child_el[1]
             else:
-                for child in iter_func(data_set):
-                    yield child
+                yield from iter_func(data_set)
 
         self._function_stack.append(_iter_func)
         return self
@@ -219,8 +218,7 @@ class QueryMappedValidator(MappedValidator[DataSetT, ValidatorFunctionT]):
             if param_name in self.validator.optional_param_names:
                 continue
             assert iterable.cur_exceptions is not None
-            for exception in iterable.cur_exceptions:
-                yield exception
+            yield from iterable.cur_exceptions
 
     def __eq__(self, other):
         return isinstance(other, QueryMappedValidator) and self.param_map == other.param_map
