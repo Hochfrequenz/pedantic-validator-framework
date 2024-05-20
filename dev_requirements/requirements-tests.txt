@@ -20,7 +20,7 @@ pytest==8.2.0
     # via
     #   -r dev_requirements/requirements-tests.in
     #   pytest-asyncio
-pytest-asyncio==0.23.6
+pytest-asyncio==0.23.7
     # via -r dev_requirements/requirements-tests.in
 typing-extensions==4.8.0
     # via
