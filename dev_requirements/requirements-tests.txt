@@ -4,7 +4,7 @@
 #
 #    pip-compile '.\dev_requirements\requirements-tests.in'
 #
-annotated-types==0.5.0
+annotated-types==0.7.0
     # via pydantic
 iniconfig==2.0.0
     # via pytest
@@ -12,9 +12,9 @@ packaging==23.0
     # via pytest
 pluggy==1.5.0
     # via pytest
-pydantic==2.8.2
+pydantic==2.9.1
     # via -r dev_requirements/requirements-tests.in
-pydantic-core==2.20.1
+pydantic-core==2.23.3
     # via pydantic
 pytest==8.3.2
     # via
