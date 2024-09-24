@@ -125,7 +125,7 @@ class ValidationError(RuntimeError):
     A unified schema for error messages occurring during validation.
     """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         message_detail: str,
@@ -179,7 +179,7 @@ class ErrorHandler(Generic[DataSetT]):
         self.warning_excs: dict[MappedValidatorT, list[ValidationError]] = {}
         self._logger = logger
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     async def catch(
         self,
         msg: str,

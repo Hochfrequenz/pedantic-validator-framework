@@ -92,7 +92,7 @@ class Parameter(Generic[DataSetT]):
     Encapsulates a single parameter. A parameter must have an ID for better error output.
     """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(self, mapped_validator: MappedValidatorT, name: str, value: Any, param_id: str, provided: bool):
         self.mapped_validator = mapped_validator
         self.name = name
