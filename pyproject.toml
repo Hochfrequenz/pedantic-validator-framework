@@ -24,6 +24,23 @@ dependencies = [     # add all the dependencies from requirements.in here, too
 ]
 dynamic = ["readme", "version"]
 
+[project.optional-dependencies]
+coverage = ["coverage==7.6.1"]
+formatting = ["black==24.8.0", "isort==5.13.2"]
+linting = ["pylint==3.2.7"]
+spellcheck = ["codespell==2.3.0"]
+test_packaging = ["build==1.2.2", "twine==5.1.1"]
+tests = [
+    "pydantic==2.9.2",
+    "pytest==8.3.3",
+    "pytest-asyncio==0.24.0"
+]
+type_check = [
+    "mypy==1.11.2",
+    "networkx-stubs==0.0.1",
+    "types-frozendict==2.0.9"
+]
+
 [project.urls]
 Changelog = "https://github.com/Hochfrequenz/pedantic-validator-framework/releases"
 Homepage = "https://github.com/Hochfrequenz/pedantic-validator-framework"
