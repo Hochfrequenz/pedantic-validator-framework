@@ -10,7 +10,7 @@ frozendict==2.4.6
     # via -r requirements.in
 networkx==3.4.2
     # via -r requirements.in
-typeguard==4.4.0
+typeguard==4.4.1
     # via -r requirements.in
 typing-extensions==4.12.2
     # via typeguard
