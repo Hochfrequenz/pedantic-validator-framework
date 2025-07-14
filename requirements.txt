@@ -8,7 +8,7 @@ bidict==0.23.1
     # via -r requirements.in
 frozendict==2.4.6
     # via -r requirements.in
-networkx==3.4.2
+networkx==3.5
     # via -r requirements.in
 typeguard==4.4.3
     # via -r requirements.in
