@@ -32,7 +32,7 @@ Homepage = "https://github.com/Hochfrequenz/pedantic-validator-framework"
 tests = [
     "pydantic==2.11.10",
     "pytest==8.4.2",
-    "pytest-asyncio==1.2.0"
+    "pytest-asyncio==1.4.0"
 ]
 coverage = [
     "coverage==7.11.3",
