@@ -47,7 +47,7 @@ linting = [
     {include-group = "tests"}
 ]
 spell_check = [
-    "codespell==2.4.1"
+    "codespell==2.4.3"
 ]
 type_check = [
     "mypy==1.15.0",
