@@ -19,5 +19,5 @@ jobs:
           PYTHONPATH: src
         run: |
           uv run --group coverage coverage run -m pytest
-          uv run --group coverage coverage html --omit "unittests/*"
-          uv run --group coverage coverage report --fail-under 80 --omit "unittests/*"
+          uv run --group coverage coverage html --omit ".venv/*,unittests/*"
+          uv run --group coverage coverage report --fail-under 80 --omit ".venv/*,unittests/*"
