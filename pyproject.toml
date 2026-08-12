@@ -38,13 +38,8 @@ coverage = [
     "coverage==7.11.3",
     {include-group = "tests"}
 ]
-formatting = [
-    "black==25.11.0",
-    "isort==7.0.0"
-]
 linting = [
-    "pylint==3.2.7",
-    {include-group = "tests"}
+    "ruff==0.16.2"
 ]
 spell_check = [
     "codespell==2.4.1"
@@ -62,31 +57,72 @@ dev = [
     {include-group = "linting"},
     {include-group = "spell_check"},
     {include-group = "type_check"}
-    # NOTE: the "formatting" group (black/isort) is intentionally NOT included here:
-    # pylint==3.2.7 requires isort<6 but formatting pins isort==7.0.0, so the two
-    # cannot share one environment (see [tool.uv] conflicts). black/isort run via
-    # pre-commit's own isolated environments and the formatting CI job.
 ]
 
 [tool.uv]
 default-groups = []
-# pylint 3.2.7 requires isort<6, while the formatting group pins isort==7.0.0.
-# These two groups are never used together in the same CI job, so declare them as
-# conflicting to let uv resolve each independently (they ran in separate CI jobs).
-conflicts = [
-    [{ group = "formatting" }, { group = "linting" }],
+
+[tool.ruff]
+line-length = 120
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "UP",
+    "B",
+    "N",
+    "PL",
+    "RUF",
+    "SIM",
+    "C4",
+    "PTH",
+    "PT",
+    "RET",
+    "ARG",
+    "TC",
+    "PIE",
+    "RSE",
+    "ISC",
+    "S",
+]
+ignore = [
+    "PLR0913",  # too-many-arguments
+    "PLR0917",  # too-many-positional-arguments
+    "PLR0912",  # too-many-branches
+    "PLR0915",  # too-many-statements
+    "PLR2004",  # magic-value-comparison
+    "ISC001",   # single-line-implicit-string-concatenation (conflicts with ruff format)
 ]
 
-[tool.black]
-line-length = 120
-
-[tool.isort]
-line_length = 120
-profile = "black"
-
-[tool.pylint."MESSAGES CONTROL"]
-max-line-length = 120
-disable="too-few-public-methods"
+[tool.ruff.lint.per-file-ignores]
+# --- Standing globs (hand-written; cover files that may not exist yet) ---
+# unittests use asserts (S101) as their core assertion mechanism.
+"unittests/**" = [
+    "S101",  # assert
+]
+# --- Grandfathered existing violations (generated; zero lint churn) ---
+# The entries below freeze the ruff violations that already existed when black/isort/pylint
+# were replaced by ruff, so no source had to change. New/changed code is held to the full
+# rule set. See the PR discussion for the recommended burn-down follow-up.
+"src/pvframework/__init__.py" = ["F401"]  # unused-import
+"src/pvframework/analysis.py" = ["S101", "UP045"]  # assert, non-pep604-annotation-optional
+"src/pvframework/errors.py" = ["S101", "S311", "UP035", "UP041", "UP045"]  # assert, suspicious-non-cryptographic-random-usage, deprecated-import, timeout-error-alias, non-pep604-annotation-optional
+"src/pvframework/execution.py" = ["PLR5501", "S101", "UP035", "UP045"]  # collapsible-else-if, assert, deprecated-import, non-pep604-annotation-optional
+"src/pvframework/mapped_validators/__init__.py" = ["F401"]  # unused-import
+"src/pvframework/mapped_validators/path_map.py" = ["UP035"]  # deprecated-import
+"src/pvframework/mapped_validators/query_map.py" = ["B905", "S101", "UP035", "UP045"]  # zip-without-explicit-strict, assert, deprecated-import, non-pep604-annotation-optional
+"src/pvframework/mapped_validators/query_parallel_map.py" = ["S101", "UP035", "UP045"]  # assert, deprecated-import, non-pep604-annotation-optional
+"src/pvframework/types.py" = ["UP035"]  # deprecated-import
+"src/pvframework/utils/__init__.py" = ["F401"]  # unused-import
+"src/pvframework/utils/frame_functions.py" = ["S101", "UP045"]  # assert, non-pep604-annotation-optional
+"src/pvframework/utils/query_object.py" = ["TC005", "UP045"]  # empty-type-checking-block, non-pep604-annotation-optional
+"src/pvframework/validator.py" = ["ARG004", "C401", "RUF021", "UP035", "UP045"]  # unused-static-method-argument, unnecessary-generator-set, parenthesize-chained-operators, deprecated-import, non-pep604-annotation-optional
+"unittests/test_complex_examples.py" = ["UP035", "UP045"]  # deprecated-import, non-pep604-annotation-optional
+"unittests/test_validation.py" = ["ARG001", "PLW0603", "PT006", "PT011", "PT018", "SIM300", "UP035", "UP045"]  # unused-function-argument, global-statement, pytest-parametrize-names-wrong-type, pytest-raises-too-broad, pytest-composite-assertion, yoda-conditions, deprecated-import, non-pep604-annotation-optional
 
 [build-system]
 requires = ["hatchling>=1.8.0", "hatch-vcs", "hatch-fancy-pypi-readme"]
