@@ -16,7 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-dependencies = [     # add all the dependencies from requirements.in here, too
+dependencies = [
     "bidict",
     "frozendict",
     "networkx",
@@ -24,38 +24,58 @@ dependencies = [     # add all the dependencies from requirements.in here, too
 ]
 dynamic = ["readme", "version"]
 
-[project.optional-dependencies]
+[project.urls]
+Changelog = "https://github.com/Hochfrequenz/pedantic-validator-framework/releases"
+Homepage = "https://github.com/Hochfrequenz/pedantic-validator-framework"
+
+[dependency-groups]
+tests = [
+    "pydantic==2.11.10",
+    "pytest==8.4.2",
+    "pytest-asyncio==1.2.0"
+]
 coverage = [
-    "coverage==7.11.3"
+    "coverage==7.11.3",
+    {include-group = "tests"}
 ]
 formatting = [
     "black==25.11.0",
     "isort==7.0.0"
 ]
 linting = [
-    "pylint==3.2.7"
+    "pylint==3.2.7",
+    {include-group = "tests"}
 ]
-spellcheck = [
+spell_check = [
     "codespell==2.4.1"
-]
-test_packaging = [
-    "build==1.3.0",
-    "twine==6.2.0"
-]
-tests = [
-    "pydantic==2.11.10",
-    "pytest==8.4.2",
-    "pytest-asyncio==1.2.0"
 ]
 type_check = [
     "mypy==1.15.0",
     "networkx-stubs==0.0.1",
-    "types-frozendict==2.0.9"
+    "types-frozendict==2.0.9",
+    {include-group = "tests"}
+]
+dev = [
+    "pre-commit",
+    {include-group = "tests"},
+    {include-group = "coverage"},
+    {include-group = "linting"},
+    {include-group = "spell_check"},
+    {include-group = "type_check"}
+    # NOTE: the "formatting" group (black/isort) is intentionally NOT included here:
+    # pylint==3.2.7 requires isort<6 but formatting pins isort==7.0.0, so the two
+    # cannot share one environment (see [tool.uv] conflicts). black/isort run via
+    # pre-commit's own isolated environments and the formatting CI job.
 ]
 
-[project.urls]
-Changelog = "https://github.com/Hochfrequenz/pedantic-validator-framework/releases"
-Homepage = "https://github.com/Hochfrequenz/pedantic-validator-framework"
+[tool.uv]
+default-groups = []
+# pylint 3.2.7 requires isort<6, while the formatting group pins isort==7.0.0.
+# These two groups are never used together in the same CI job, so declare them as
+# conflicting to let uv resolve each independently (they ran in separate CI jobs).
+conflicts = [
+    [{ group = "formatting" }, { group = "linting" }],
+]
 
 [tool.black]
 line-length = 120

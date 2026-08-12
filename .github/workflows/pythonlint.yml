@@ -10,16 +10,21 @@ jobs:
         python-version: ["3.12"]
         os: [ubuntu-latest]
         linter-env: ["linting", "type_check"]
+    env:
+      PYTHONPATH: src
     steps:
       - uses: actions/checkout@v6
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Dependencies
+      - name: Run linting
+        if: matrix.linter-env == 'linting'
         run: |
-          python -m pip install --upgrade pip
-          pip install tox
-      - name: Run ${{ matrix.linter-env }} via Tox
+          uv run --group linting pylint src/pvframework
+          uv run --group linting pylint unittests --rcfile=unittests/.pylintrc
+      - name: Run type_check
+        if: matrix.linter-env == 'type_check'
         run: |
-          tox -e ${{ matrix.linter-env }}
+          uv run --group type_check mypy --show-error-codes src/pvframework
+          uv run --group type_check mypy --show-error-codes unittests
