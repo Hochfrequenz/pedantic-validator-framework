@@ -373,14 +373,14 @@ class ValidationManager(Generic[DataSetT]):
             running_dependencies = {
                 dependency for dependency in dependencies if self.info.states[dependency] == _ExecutionState.RUNNING
             }
-            assert all(
-                self.info.states[dependency] != _ExecutionState.PENDING for dependency in dependencies
-            ), "Somehow the execution order is not working"
+            assert all(self.info.states[dependency] != _ExecutionState.PENDING for dependency in dependencies), (
+                "Somehow the execution order is not working"
+            )
 
             if is_async(mapped_validator) or len(running_dependencies) > 0:
-                assert (
-                    task_group is not None
-                ), f"Something wrong here. {mapped_validator.name} should be run async but there is no task group"
+                assert task_group is not None, (
+                    f"Something wrong here. {mapped_validator.name} should be run async but there is no task group"
+                )
                 self.info.tasks[mapped_validator] = task_group.create_task(
                     self._execute_async_validator(mapped_validator, running_dependencies)
                 )
