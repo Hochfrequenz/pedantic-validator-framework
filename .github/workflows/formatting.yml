@@ -22,7 +22,7 @@ jobs:
           - tool: "isort"
             command: "ruff check --select I ."
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install uv
         uses: astral-sh/setup-uv@v9.0.0
         with:
