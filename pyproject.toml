@@ -30,7 +30,7 @@ Homepage = "https://github.com/Hochfrequenz/pedantic-validator-framework"
 
 [dependency-groups]
 tests = [
-    "pydantic==2.13.4",
+    "pydantic==2.13.5",
     "pytest==9.1.1",
     "pytest-asyncio==1.4.0"
 ]
